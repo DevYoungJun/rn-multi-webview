@@ -1,4 +1,10 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# React Native Webview 를 이용한 결제 창 처리 예제
+
+웹뷰에서 새 창에 대한 처리를 하는 예제입니다. 예제에서는 결제창을 처리하도록 합니다.
+- window.open 함수 오버라이드. window.open 함수 호출시 ReactNativeWebView 의 postMessage를 호출합니다. 함수 응답으로 Custom Close 함수가 담긴 객체를 전달합니다.
+- window.opener 객체 오버라이드. postMessage 함수가 ReactNativeWebView 의 postMessage 함수를 호출하도록 변경.
+- Webview onMessage 핸들러 구현. ReactNativeWebView 의 postMessage 로 전달된 데이터를 Message Type 에 따라 처리합니다.
+- 예제에서는 역할을 명확히 하기 위에 각 웹뷰에서 필요한 부분을 나눠서 적용했습니다. 범용성을 위해서는 각 웹뷰에 적용된 내용들을 공통으로 정의해서 모두 적용하는것이 좋을것 같습니다.
 
 # Getting Started
 
@@ -61,37 +67,3 @@ yarn ios
 If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
 
 This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
