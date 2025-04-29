@@ -5,127 +5,122 @@
  * @format
  */
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import React, {useRef} from 'react';
+import {SafeAreaView, StatusBar, useColorScheme, View} from 'react-native';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import WebView from 'react-native-webview';
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const webViewRef1 = useRef<WebView>(null);
+  const webViewRef2 = useRef<WebView>(null);
+  const [popupUrl, setPopupUrl] = React.useState<string | null>(null);
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    borderWidth: 1,
+    borderColor: '#000000',
+
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the recommendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
-
   return (
-    <View style={backgroundStyle}>
+    <SafeAreaView style={[backgroundStyle, {flex: 1}]}>
+      <View style={{flex: 1, borderWidth: 1, borderColor: '#0000FF'}}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+      <WebView
+        ref={webViewRef1}
+        source={{uri: 'https://kfriday-uploads-dev.s3.ap-northeast-2.amazonaws.com/temp/webview-test/index.html?timestamp=' + new Date().getTime()}}
+        // source={{uri: 'https://app.kfri.day/'}}
+        style={{flex: 1, borderWidth: 1, borderColor: '#FF0000'}}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        allowsBackForwardNavigationGestures={true}
+        javaScriptCanOpenWindowsAutomatically={true}
+        setSupportMultipleWindows={true}
+        injectedJavaScript={`(function() {
+          window.open = function(data, target) {
+            window.ReactNativeWebView.postMessage(JSON.stringify({
+              type: 'windowOpen',
+              data: data,
+            }));
+            return {
+              close: function() {
+                alert('new close function');
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'windowClose',
+                  data: data,
+                }));
+              }
+            };
+          };
+        })();`}
+        onMessage={event => {
+          console.log('## webview1 event = ', event);
+          try {
+            const message = JSON.parse(event.nativeEvent.data);
+            console.log('## webview1 message = ', message);
+            if (message.type === 'windowOpen') {
+              const originalUrl = message.data;
+              const url = originalUrl.startsWith('https')
+                ? originalUrl
+                : new URL(
+                    originalUrl,
+                    'https://kfriday-uploads-dev.s3.ap-northeast-2.amazonaws.com/temp/webview-test/',
+                  ).href;
+
+              // 팝업 웹뷰에 URL 전달
+              setPopupUrl(url);
+            } else if (message.type === 'windowClose') {
+              // 팝업 웹뷰 닫기
+              console.log('## popup window close');
+              setPopupUrl(null);
+            }
+          } catch (e) {
+            console.error('메시지 파싱 오류:', e);
+          }
+        }}
+      />
+      {popupUrl && (
+        <WebView
+          ref={webViewRef2}
+          source={{uri: popupUrl}}
+          style={{flex: 3, borderWidth: 1, borderColor: '#00FF00'}}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          startInLoadingState={true}
+          allowsBackForwardNavigationGestures={true}
+          setSupportMultipleWindows={true}
+          injectedJavaScript={`(function() {
+            window.opener = {
+              postMessage: function(data) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                  type: 'openerParentMessage',
+                  data: data,
+                }));
+              }
+            };
+          })();`}
+          onMessage={event => {
+            try {
+              const message = JSON.parse(event.nativeEvent.data);
+              if (message.type === 'openerParentMessage') {
+                // 메시지를 첫 번째 웹뷰로 전달
+                webViewRef1.current?.postMessage(JSON.stringify(message.data));
+              }
+            } catch (e) {
+              console.error('메시지 파싱 오류:', e);
+            }
+          }}
+        />
+      )}
+      </View>
+    </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
 
 export default App;
